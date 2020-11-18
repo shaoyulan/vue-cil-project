@@ -1,12 +1,30 @@
 <script>
-import {ref, reactive} from "vue";
+import {ref, reactive, onMounted} from "vue";
 import router from '@/router/'
 import axios from 'axios'
 import VueAxios from 'vue-axios'
 export default {
     setup(){
         const url = 'https://script.google.com/macros/s/AKfycbzRgKHX0eSD0ZY_dvSxvXnUodWdGw4y_NLbzJvlLOM2bh5wjjIp/exec';
+        const info_url = 'https://script.google.com/macros/s/AKfycbwQnbfmDLHTwUZn2QC7FE0P639_87flQKaItgqTzl8iqW7PEJ55/exec'
         let isRegisterForm = ref(false);
+        let gender_info= reactive({arr:[]});
+        let learn_from_there_info = reactive({arr: []});
+
+        onMounted(() => {
+          var data = JSON.stringify({
+              action: 'getInfo',
+          });
+
+          axios.post( info_url , data)
+          .then(function(res) {
+            gender_info.arr = res.data.res_data.gendeer;
+            learn_from_there_info.arr = res.data.res_data.learned_from_there;
+          })
+          .catch(function(error) {
+              console.log(error);
+          });
+        })
 
         // switch form
         var toggleFormHandler = function(){
@@ -25,59 +43,68 @@ export default {
                 time: `${(new Date).toLocaleDateString()} ${(new Date).getHours()}:${(new Date).getMinutes()}:${(new Date).getSeconds()}`,
 
                 id: loginData.id,
-                id: loginData.pwd,
+                pwd: loginData.pwd,
             });
-            console.log('login', loginData)
 
-            router.push('/')
-            // axios.post(url , data)
-            // .then(function(res) {
-            //     console.log(res.data);
-            // })
-            // .catch(function(error) {
-            //     console.log(error);
-            // });
+            axios.post(url , data)
+            .then(function(res) {
+              console.log('login success',res.data);
+              if ( res.data.res_code != -1){
+                sessionStorage.setItem('vue-cil-project', JSON.stringify(res.data.res_data))
+                router.push('/home')
+              }
+            })
+            .catch(function(error) {
+              console.log('login fail',err);
+            });
         }
 
-        // refister
+        // register
         let registerData = reactive({
+            id: null,
             pwd: null,
             confirmdation_pwd: null,
             name: null,
             phone: null,
-            birthday: null,
+            birthYear: (new Date()).getFullYear(),
+            birthMonth: (new Date()).getMonth() + 1,
+            birthDate: (new Date()).getDate(),
             address: null,
             gender: null,
-            about: '<p>test</p><h2>TITLE</h2>',
+            about: null,
+            where: null,
         })
 
         var registerHandler = function() {
             var data = JSON.stringify({
-                id: Date.now(),
                 action: 'registered',
                 time: `${(new Date).toLocaleDateString()} ${(new Date).getHours()}:${(new Date).getMinutes()}:${(new Date).getSeconds()}`,
 
+                id: registerData.id,
                 pwd: registerData.pwd,
                 confirmdation_pwd: registerData.confirmdation_pwd,
                 name: registerData.name,
                 phone: registerData.phone,
-                birthday: registerData.birthday,
+                birthday : registerData.birthYear + '/' + registerData.birthMonth + '/' + registerData.birthDate,
                 address: registerData.address,
                 gender: registerData.gender,
-                where: [0,1,2],
+                where: registerData.where,
                 about: registerData.about,
             });
             console.log('submit', registerData)
             axios.post(url , data)
             .then(function(res) {
-                console.log(res.data);
+                console.log('register success',res.data);
             })
             .catch(function(error) {
-                console.log(error);
+                console.log('register fail', error);
             });
         }
 
         return {
+            gender_info,
+            learn_from_there_info,
+
             isRegisterForm,
             toggleFormHandler,
 
@@ -101,19 +128,18 @@ export default {
     <h1 class="title">Login</h1>
     <form @submit.prevent="loginHandler">
       <div class="input-container">
-        <input type="#{type}" id="#{label}" />
+        <input type="#{type}" id="#{label}" v-model="loginData.id" />
         <label for="#{label}">Username</label>
         <div class="bar"></div>
       </div>
       <div class="input-container">
-        <input type="#{type}" id="#{label}" />
+        <input type="#{type}" id="#{label}" v-model="loginData.pwd" />
         <label for="#{label}">Password</label>
         <div class="bar"></div>
       </div>
       <div class="button-container">
         <button class=""><span>Go</span></button>
       </div>
-      <div class="footer"><a href="javascript:;">Forgot your password?</a></div>
     </form>
   </div>
   <div class="card alt">
@@ -134,6 +160,11 @@ export default {
         <div class="bar"></div>
       </div>
       <div class="input-container">
+        <input type="#{type}" id="#{label}"  v-model="registerData.id"/>
+        <label for="#{label}">Id</label>
+        <div class="bar"></div>
+      </div>
+      <div class="input-container">
         <input type="#{type}" id="#{label}"  v-model="registerData.name"/>
         <label for="#{label}">Username</label>
         <div class="bar"></div>
@@ -148,8 +179,8 @@ export default {
         <div class="form-row">
           <div class="col-4">
             <div class="input-group sty-squarebox sty-select">
-              <select name="" id="" class="custom-select">
-                <option value="" v-for="idx in 50">
+              <select name="" id="" class="custom-select" v-model="registerData.birthYear">
+                <option :value="2021 - idx" v-for="idx in 50">
                   {{ 2021 - idx }}
                 </option>
               </select>
@@ -157,21 +188,33 @@ export default {
           </div>
           <div class="col-4">
             <div class="input-group sty-squarebox sty-select">
-              <select name="" id="" class="custom-select">
-                <option value="" v-for="idx in 12">
+              <select name="" id="" class="custom-select" v-model="registerData.birthMonth">
+                <option :value="idx" v-for="idx in 12">
                   {{ idx }}
                 </option>
               </select>
             </div>
           </div>
           <div class="col-4">
-            <div class="input-group sty-squarebox sty-select">
-              <select name="" id="" class="custom-select">
-                <option value="" v-for="idx in 31">
+            <div class="input-group sty-squarebox sty-select" >
+              <select name="" id="" class="custom-select" v-model="registerData.birthDate">
+                <option :value="idx" v-for="idx in 31">
                   {{ idx }}
                 </option>
               </select>
             </div>
+          </div>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="#{label}">Where</label>
+        <div class="form-row">
+          <div class="input-group sty-squarebox sty-select"  >
+            <select name="" id="" class="custom-select" v-model="registerData.where">
+              <option :value="idx" v-for="(item, idx) in learn_from_there_info.arr" :key="idx">
+                {{item}}
+              </option>
+            </select>
           </div>
         </div>
       </div>
@@ -183,13 +226,9 @@ export default {
       <div class="form-group">
         <label class="form-label" for="#{label}">Gender</label>
         <div class="input-group sty-custom-control">
-          <div class="custom-control custom-radio mr-sm-2">
-            <input type="radio" class="custom-control-input" id="male" name="gender" v-model="registerData.gender">
-            <label class="custom-control-label" for="male">男</label>
-          </div>
-          <div class="custom-control custom-radio mr-sm-2">
-            <input type="radio" class="custom-control-input" id="female" name="gender" v-model="registerData.gender">
-            <label class="custom-control-label" for="female">女</label>
+          <div class="custom-control custom-radio mr-sm-2" v-for="(item, idx) in gender_info.arr" :key="idx">
+            <input type="radio" class="custom-control-input" :id="'gender-' + idx" name="gender" :value="idx" v-model="registerData.gender">
+            <label class="custom-control-label" :for="'gender-' + idx">{{item}}</label>
           </div>
         </div>
       </div>
@@ -199,7 +238,7 @@ export default {
         <div class="bar"></div>
       </div>
       <div class="button-container">
-        <button><span>Next</span></button>
+        <button><span>SUBMIT</span></button>
       </div>
     </form>
   </div>
@@ -448,6 +487,15 @@ export default {
   color: #9d9d9d;
   -webkit-transform: translate(-12%, -50%) scale(0.75);
           transform: translate(-12%, -50%) scale(0.75);
+}
+.card .input-container textarea:valid ~ label {
+    transform: translate(-12%, -85%) scale(0.75);
+}
+.input-container textarea {
+  border:0;
+  &:focus, &:active{
+    outline: none;
+  }
 }
 .card .input-container label {
   position: absolute;

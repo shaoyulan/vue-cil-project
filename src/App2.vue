@@ -38,6 +38,19 @@ body {
   padding: 15px;
 }
 
+// btn
+.form-btn{
+	border:0;
+	box-shadow: 0;
+	padding: 5px 20px;
+	background: #fff;
+	color: #000;
+	text-decoration: none;
+
+	font-weight: bold;
+	color: #ed2553;
+}
+// btn /
 
 $color-input-border: #fff;
 $color-font-gray-opacity: #ccc;
